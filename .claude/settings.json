@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -si http://127.0.0.1:8001/api/v1/storefront/donation-settings)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://127.0.0.1:8001/up)"
+    ]
+  }
+}
