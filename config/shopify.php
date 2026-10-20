@@ -45,6 +45,12 @@ return [
     | Webhook topic => handler class. Anything not listed here is stored in the
     | webhook inbox and ignored.
     */
+    /*
+    | After an order is paid, look up its transactions in the Admin API to read the processing fee
+    | (Shopify Payments only). Turn off to skip the extra API call.
+    */
+    'fetch_fees' => (bool) env('SHOPIFY_FETCH_FEES', true),
+
     'unregistered' => ['fulfillments/create', 'fulfillments/update', 'fulfillment_events/create'],
 
     'handlers' => [

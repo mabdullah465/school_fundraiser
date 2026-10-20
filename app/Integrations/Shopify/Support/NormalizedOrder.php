@@ -35,6 +35,9 @@ final class NormalizedOrder
         public readonly ?CarbonImmutable $placedAt,
         public readonly ?CarbonImmutable $cancelledAt,
         public readonly array $items,
+        public readonly ?string $paymentGateway = null,
+        /** @var list<array{title: string, rate: float|null, amount_minor: int}> */
+        public readonly array $taxLines = [],
     ) {}
 
     /**
@@ -75,6 +78,12 @@ final class NormalizedOrder
             placedAt: isset($payload['created_at']) ? CarbonImmutable::parse($payload['created_at']) : null,
             cancelledAt: isset($payload['cancelled_at']) ? CarbonImmutable::parse($payload['cancelled_at']) : null,
             items: $items,
+            paymentGateway: $payload['payment_gateway_names'][0] ?? $payload['gateway'] ?? null,
+            taxLines: array_map(fn ($t) => [
+                'title' => (string) ($t['title'] ?? 'Tax'),
+                'rate' => isset($t['rate']) ? (float) $t['rate'] : null,
+                'amount_minor' => Money::toMinor($t['price_set']['shop_money']['amount'] ?? $t['price'] ?? null, $currency),
+            ], $payload['tax_lines'] ?? []),
         );
     }
 

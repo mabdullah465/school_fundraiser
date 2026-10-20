@@ -93,7 +93,7 @@
         <div class="empty">No orders yet.</div>
     @else
         <table>
-            <tr><th>Order</th><th>Placed</th><th>Customer</th><th>School</th><th class="num">Items</th><th class="num">Total</th>
+            <tr><th>Order</th><th>Placed</th><th>Customer</th><th>School</th><th class="num">Items</th><th class="num">Total</th><th class="num">Sales tax</th><th>Gateway</th><th class="num">Processing fee</th>
                 <th>Shopify status</th><th>Status</th><th>Donation</th></tr>
             @foreach ($orders as $o)
                 <tr>
@@ -107,6 +107,14 @@
                     </td>
                     <td class="num">{{ $o->items_count }}</td>
                     <td class="num">{{ $money($o->total_minor, $o->currency) }}</td>
+                    <td class="num" title="{{ collect($o->tax_lines ?? [])->map(fn ($t) => $t['title'].($t['rate'] !== null ? ' '.rtrim(rtrim(number_format($t['rate'] * 100, 3), '0'), '.').'%' : '').': '.number_format($t['amount_minor'] / 100, 2))->implode(' | ') }}">{{ $money($o->tax_minor, $o->currency) }}</td>
+                    <td>{{ $o->payment_gateway ?? '—' }}</td>
+                    <td class="num" title="{{ collect($o->fee_details ?? [])->map(fn ($f) => $f['type'].': '.number_format($f['amount_minor'] / 100, 2))->implode(' | ') }}">
+                        @if ($o->fee_status === 'fetched') {{ $money($o->processing_fee_minor, $o->currency) }}
+                        @elseif ($o->fee_status === 'pending') <span class="muted">pending…</span>
+                        @elseif ($o->fee_status === 'unavailable') <span class="muted">n/a</span>
+                        @else <span class="muted">—</span> @endif
+                    </td>
                     <td>{{ $o->financial_status ?? '—' }}{{ $o->fulfillment_status ? ' / '.$o->fulfillment_status : '' }}</td>
                     <td><span class="pill">{{ str_replace('_', ' ', $o->display_status->value) }}</span></td>
                     <td>

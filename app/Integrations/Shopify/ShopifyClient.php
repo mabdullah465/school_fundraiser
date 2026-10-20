@@ -85,6 +85,31 @@ class ShopifyClient
     }
 
     /**
+     * Payment transactions of an order, including Shopify Payments processing fees.
+     * Fees are only present for Shopify Payments transactions, and can appear a little after payment.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function orderTransactions(int $shopifyOrderId): array
+    {
+        $data = $this->graphql(<<<'GQL'
+            query OrderFees($id: ID!) {
+              order(id: $id) {
+                transactions {
+                  kind
+                  status
+                  gateway
+                  amountSet { shopMoney { amount currencyCode } }
+                  fees { type rate flatFee { amount } amount { amount currencyCode } }
+                }
+              }
+            }
+            GQL, ['id' => "gid://shopify/Order/{$shopifyOrderId}"]);
+
+        return $data['order']['transactions'] ?? [];
+    }
+
+    /**
      * Subscribes a topic (e.g. "orders/paid") to an HTTPS callback URL.
      *
      * @return array<string, mixed>

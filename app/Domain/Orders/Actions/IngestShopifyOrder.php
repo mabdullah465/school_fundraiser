@@ -39,6 +39,8 @@ class IngestShopifyOrder
                 'discount_minor' => $normalized->discountMinor,
                 'shipping_minor' => $normalized->shippingMinor,
                 'tax_minor' => $normalized->taxMinor,
+                'tax_lines' => $normalized->taxLines,
+                'payment_gateway' => $normalized->paymentGateway,
                 'total_minor' => $normalized->totalMinor,
                 'financial_status' => $normalized->financialStatus,
                 'fulfillment_status' => $normalized->fulfillmentStatus,

@@ -78,6 +78,13 @@ final class FakeShopifyPayload
             'total_discounts' => self::decimal($discounts),
             'total_tax' => self::decimal($tax),
             'total_shipping_price_set' => ['shop_money' => ['amount' => self::decimal($shipping), 'currency_code' => $currency]],
+            'payment_gateway_names' => [$options['gateway'] ?? 'shopify_payments'],
+            'tax_lines' => $tax > 0 ? [[
+                'title' => 'State Tax',
+                'rate' => 0.0825,
+                'price' => self::decimal($tax),
+                'price_set' => ['shop_money' => ['amount' => self::decimal($tax), 'currency_code' => $currency]],
+            ]] : [],
             'note_attributes' => $noteAttributes,
             'customer' => ['first_name' => explode(' ', $customer)[0], 'last_name' => explode(' ', $customer)[1] ?? ''],
             'shipping_address' => [
