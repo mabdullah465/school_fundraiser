@@ -1,11 +1,11 @@
 <?php
 
 /*
-| The "/" page lists webhook deliveries, orders and donations. It shows customer data and raw
-| payloads, so it is protected:
-|   - DASHBOARD_PASSWORD set   -> HTTP Basic auth (user: DASHBOARD_USER, default "admin")
-|   - not set, APP_ENV=local   -> open (your machine only)
-|   - not set, anywhere else   -> 404, as if the page did not exist
+| The "/" page lists webhook deliveries, orders and donations.
+|   - no DASHBOARD_PASSWORD  -> open to anyone (default)
+|   - DASHBOARD_PASSWORD set -> HTTP Basic auth (user: DASHBOARD_USER, default "admin")
+| Emails are masked and contact details are redacted in payloads, but names, schools and
+| amounts are visible, so set a password if the URL is public and the data is real.
 */
 return [
     'user' => env('DASHBOARD_USER', 'admin'),

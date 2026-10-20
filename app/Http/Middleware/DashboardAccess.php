@@ -12,9 +12,8 @@ class DashboardAccess
     {
         $password = config('dashboard.password');
 
+        // No password configured: the page is open. Setting DASHBOARD_PASSWORD turns on Basic auth.
         if (! is_string($password) || $password === '') {
-            abort_unless(app()->environment('local'), 404);
-
             return $next($request);
         }
 

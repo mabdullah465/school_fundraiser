@@ -14,11 +14,11 @@ class DashboardTest extends TestCase
     use RefreshDatabase;
     use SendsShopifyWebhooks;
 
-    public function test_the_page_does_not_exist_outside_local_without_a_password(): void
+    public function test_the_page_is_open_when_no_password_is_set(): void
     {
         config(['dashboard.password' => null]);
 
-        $this->get('/')->assertNotFound(); // APP_ENV is "testing" here
+        $this->get('/')->assertOk();
     }
 
     public function test_it_asks_for_credentials_when_a_password_is_set(): void
