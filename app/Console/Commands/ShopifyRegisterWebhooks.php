@@ -27,7 +27,9 @@ class ShopifyRegisterWebhooks extends Command
         $existing = collect($shopify->listWebhooks())->pluck('callbackUrl', 'topic');
         $failed = false;
 
-        foreach (array_keys(config('shopify.handlers')) as $topic) {
+        $topics = array_diff(array_keys(config('shopify.handlers')), config('shopify.unregistered', []));
+
+        foreach ($topics as $topic) {
             $enum = strtoupper(str_replace('/', '_', $topic));
 
             if ($existing->get($enum) === $callback) {

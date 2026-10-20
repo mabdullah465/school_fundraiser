@@ -3,6 +3,7 @@
 namespace App\Integrations\Shopify;
 
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
@@ -11,17 +12,56 @@ use RuntimeException;
  */
 class ShopifyClient
 {
+    private const TOKEN_CACHE_KEY = 'shopify.admin-token';
+
+    /**
+     * A static SHOPIFY_ADMIN_TOKEN wins. Otherwise exchange the app's client id and secret
+     * for a short-lived token (client credentials grant) and cache it until shortly before it expires.
+     */
+    public function accessToken(): string
+    {
+        if ($static = config('shopify.admin_token')) {
+            return $static;
+        }
+
+        $domain = config('shopify.store_domain');
+        $id = config('shopify.client_id');
+        $secret = config('shopify.client_secret');
+
+        if (! $domain || ! $id || ! $secret) {
+            throw new RuntimeException('Set SHOPIFY_STORE_DOMAIN plus either SHOPIFY_ADMIN_TOKEN or SHOPIFY_CLIENT_ID and SHOPIFY_CLIENT_SECRET.');
+        }
+
+        if ($cached = Cache::get(self::TOKEN_CACHE_KEY)) {
+            return $cached;
+        }
+
+        $response = Http::asForm()->acceptJson()->timeout(20)
+            ->post("https://{$domain}/admin/oauth/access_token", [
+                'grant_type' => 'client_credentials',
+                'client_id' => $id,
+                'client_secret' => $secret,
+            ])->throw();
+
+        $token = $response->json('access_token')
+            ?? throw new RuntimeException('Shopify did not return an access token.');
+
+        $ttl = max(60, (int) $response->json('expires_in', 86399) - 300);
+        Cache::put(self::TOKEN_CACHE_KEY, $token, $ttl);
+
+        return $token;
+    }
+
     private function http(): PendingRequest
     {
         $domain = config('shopify.store_domain');
-        $token = config('shopify.admin_token');
 
-        if (! $domain || ! $token) {
-            throw new RuntimeException('Set SHOPIFY_STORE_DOMAIN and SHOPIFY_ADMIN_TOKEN first.');
+        if (! $domain) {
+            throw new RuntimeException('Set SHOPIFY_STORE_DOMAIN first.');
         }
 
         return Http::baseUrl("https://{$domain}/admin/api/".config('shopify.api_version'))
-            ->withHeaders(['X-Shopify-Access-Token' => $token])
+            ->withHeaders(['X-Shopify-Access-Token' => $this->accessToken()])
             ->acceptJson()
             ->timeout(20)
             ->retry(2, 500);
@@ -33,7 +73,7 @@ class ShopifyClient
      */
     public function graphql(string $query, array $variables = []): array
     {
-        $response = $this->http()->post('/graphql.json', ['query' => $query, 'variables' => $variables])->throw();
+        $response = $this->http()->post('/graphql.json', ['query' => $query, 'variables' => (object) $variables])->throw();
 
         $json = $response->json();
 

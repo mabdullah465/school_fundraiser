@@ -21,10 +21,19 @@ return [
     'admin_token' => env('SHOPIFY_ADMIN_TOKEN'),
 
     /*
-    | Used to verify the X-Shopify-Hmac-Sha256 header. For a custom app this is
-    | the app's "API secret key". Webhooks are rejected when this is empty.
+    | App credentials (Dev Dashboard "Client ID" / "Client secret").
+    | When SHOPIFY_ADMIN_TOKEN is empty, an Admin API token is obtained with the
+    | client credentials grant using these two values and cached until it expires.
     */
-    'webhook_secret' => env('SHOPIFY_WEBHOOK_SECRET'),
+    'client_id' => env('SHOPIFY_CLIENT_ID'),
+    'client_secret' => env('SHOPIFY_CLIENT_SECRET'),
+
+    /*
+    | Used to verify the X-Shopify-Hmac-Sha256 header. Shopify signs app webhooks
+    | with the app's client secret, so that is the default. Webhooks are rejected
+    | when this is empty.
+    */
+    'webhook_secret' => env('SHOPIFY_WEBHOOK_SECRET') ?: env('SHOPIFY_CLIENT_SECRET'),
 
     /*
     | Name of the cart attribute the theme writes the selected school id into.
@@ -36,12 +45,20 @@ return [
     | Webhook topic => handler class. Anything not listed here is stored in the
     | webhook inbox and ignored.
     */
+    'unregistered' => ['fulfillments/create', 'fulfillments/update', 'fulfillment_events/create'],
+
     'handlers' => [
         'orders/create' => Handlers\OrderUpsertHandler::class,
         'orders/updated' => Handlers\OrderUpsertHandler::class,
         'orders/paid' => Handlers\OrderUpsertHandler::class,
         'orders/cancelled' => Handlers\OrderCancelledHandler::class,
         'refunds/create' => Handlers\RefundCreatedHandler::class,
+        // Shopify refuses the legacy fulfillments/* topics for this app even with the fulfilment scope,
+        // so shipping state comes from the order topics instead (they carry fulfillment_status).
+        'orders/fulfilled' => Handlers\OrderUpsertHandler::class,
+        'orders/partially_fulfilled' => Handlers\OrderUpsertHandler::class,
+        // Kept so delivery events are handled if they are ever enabled (see FulfillmentHandler).
+        // Not registered by shopify:register-webhooks, which skips topics listed in 'unregistered'.
         'fulfillments/create' => Handlers\FulfillmentHandler::class,
         'fulfillments/update' => Handlers\FulfillmentHandler::class,
         'fulfillment_events/create' => Handlers\FulfillmentHandler::class,
